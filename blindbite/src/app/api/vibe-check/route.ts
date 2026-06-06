@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { callAI } from '@/lib/ai';
+import type { PostVibeCheckRequest } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  let body: PostVibeCheckRequest;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (!body.recommendationId || !body.cravingId || !body.requesterId || !body.recommenderId || typeof body.lovedIt !== 'boolean') {
+    return NextResponse.json({ error: 'Missing required fields: recommendationId, cravingId, requesterId, recommenderId, lovedIt' }, { status: 400 });
+  }
 
   const { data: vibeCheck, error } = await supabase
     .from('vibe_checks')
@@ -29,7 +39,9 @@ export async function POST(request: NextRequest) {
 
 Generate one warm, fun icebreaker message (max 20 words) that references their shared food interest. Include one relevant emoji. No quotation marks.`;
       icebreaker = await callAI(prompt);
-    } catch {}
+    } catch (e) {
+      console.warn('Icebreaker generation failed:', e);
+    }
 
     const { data: chatRequest } = await supabase
       .from('chat_requests')

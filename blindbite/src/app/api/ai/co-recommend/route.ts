@@ -4,7 +4,16 @@ import { callAI, callGLMImage, parseAIJson } from '@/lib/ai';
 import { DEMO_RESTAURANTS } from '@/data/demo-restaurants';
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  let body: { cravingId: string; cravingText: string; latitude: number; longitude: number };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (!body.cravingId || !body.cravingText || body.latitude == null || body.longitude == null) {
+    return NextResponse.json({ error: 'Missing required fields: cravingId, cravingText, latitude, longitude' }, { status: 400 });
+  }
 
   try {
     const prompt = `A user near London is craving: "${body.cravingText}"
@@ -29,7 +38,7 @@ Return ONLY the JSON array.`;
     const recommendations = [];
     for (const suggestion of suggestions.slice(0, 3)) {
       let imageUrl: string | null = null;
-      try { imageUrl = await callGLMImage(`A beautiful, appetizing food photography style image of ${suggestion.dish_to_image}. Warm lighting, shallow depth of field. No text overlays.`); } catch {}
+      try { imageUrl = await callGLMImage(`A beautiful, appetizing food photography style image of ${suggestion.dish_to_image}. Warm lighting, shallow depth of field. No text overlays.`); } catch (e) { console.warn('Image gen failed in co-recommend:', e); }
 
       const lat = body.latitude + (Math.random() - 0.5) * 0.005;
       const lng = body.longitude + (Math.random() - 0.5) * 0.005;

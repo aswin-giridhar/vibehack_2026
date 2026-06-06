@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { callAI, callGLMImage, parseAIJson } from '@/lib/ai';
+import type { PostRecommendationRequest } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  let body: PostRecommendationRequest;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (!body.cravingId || !body.recommenderId || !body.recommenderName || !body.restaurantName ||
+      body.latitude == null || body.longitude == null) {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  }
 
   // 1. Insert base recommendation
   const { data: rec, error } = await supabase
@@ -62,11 +73,14 @@ Return ONLY the JSON object.`;
 
 export async function GET(request: NextRequest) {
   const cravingId = new URL(request.url).searchParams.get('cravingId');
+  if (!cravingId) {
+    return NextResponse.json({ error: 'Missing required query param: cravingId' }, { status: 400 });
+  }
   const { data, error } = await supabase
     .from('recommendations')
     .select('*')
     .eq('craving_id', cravingId)
     .order('smart_match_score', { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ recommendations: data });
+  return NextResponse.json({ recommendations: data ?? [] });
 }

@@ -63,14 +63,24 @@ export async function callClaude(prompt: string, systemPrompt?: string): Promise
 }
 
 export function parseAIJson<T>(raw: string): T {
-  try { return JSON.parse(raw); } catch {}
+  // Attempt 1: direct JSON parse
+  try { return JSON.parse(raw) as T; } catch { /* fall through */ }
+
+  // Attempt 2: extract from markdown code block
   const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (match) try { return JSON.parse(match[1]); } catch {}
-  const start = raw.indexOf(raw.includes('[') ? '[' : '{');
-  const end = raw.lastIndexOf(raw.includes('[') ? ']' : '}');
-  if (start !== -1 && end !== -1) {
-    try { return JSON.parse(raw.slice(start, end + 1)); } catch {}
+  if (match) {
+    try { return JSON.parse(match[1]) as T; } catch { /* fall through */ }
   }
+
+  // Attempt 3: brute-force extract JSON object/array from text
+  const bracket = raw.includes('[') ? '[' : '{';
+  const closeBracket = raw.includes('[') ? ']' : '}';
+  const start = raw.indexOf(bracket);
+  const end = raw.lastIndexOf(closeBracket);
+  if (start !== -1 && end !== -1 && end > start) {
+    try { return JSON.parse(raw.slice(start, end + 1)) as T; } catch { /* fall through */ }
+  }
+
   throw new Error(`Failed to parse AI JSON: ${raw.slice(0, 100)}`);
 }
 

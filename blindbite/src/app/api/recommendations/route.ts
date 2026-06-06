@@ -1,12 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { callAI, callGLMImage, parseAIJson } from '@/lib/ai';
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  return NextResponse.json({ recommendation: { id: 'mock-r1', craving_id: body.cravingId, recommender_name: body.recommenderName, restaurant_name: body.restaurantName, image_url: '/mock/octopus.jpg', vibe_summary: 'Cozy Portuguese spot, their octopus is legendary', tags: ['cozy', 'seafood'], is_ai_generated: false, smart_match_score: 0.9, is_best_match: true, latitude: body.latitude, longitude: body.longitude, status: 'active', created_at: new Date().toISOString() } });
+
+  // 1. Insert base recommendation
+  const { data: rec, error } = await supabase
+    .from('recommendations')
+    .insert({
+      craving_id: body.cravingId,
+      recommender_id: body.recommenderId,
+      recommender_name: body.recommenderName,
+      restaurant_name: body.restaurantName,
+      restaurant_address: body.restaurantAddress || null,
+      latitude: body.latitude,
+      longitude: body.longitude,
+      location: `SRID=4326;POINT(${body.longitude} ${body.latitude})`,
+      is_ai_generated: false,
+    })
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 2. AI enrichment (best-effort)
+  try {
+    const { data: craving } = await supabase.from('cravings').select('text').eq('id', body.cravingId).single();
+
+    const enrichmentPrompt = `You are a food and drink expert. Given this restaurant recommendation:
+- Restaurant: ${body.restaurantName}
+- Craving: ${craving?.text || 'unknown'}
+
+Generate a JSON object:
+{
+  "vibe_summary": "One warm, descriptive sentence about the vibe",
+  "tags": ["3-5 lowercase tags"]
 }
+Return ONLY the JSON object.`;
+    const enrichmentRaw = await callAI(enrichmentPrompt);
+    const enrichment = parseAIJson<{ vibe_summary: string; tags: string[] }>(enrichmentRaw);
+
+    let imageUrl: string | null = null;
+    try {
+      imageUrl = await callGLMImage(`A beautiful, appetizing food photography style image of a signature dish at ${body.restaurantName}. Warm lighting, shallow depth of field, restaurant ambiance. No text overlays.`);
+    } catch (e) { console.warn('Image gen failed:', e); }
+
+    const { data: updated } = await supabase
+      .from('recommendations')
+      .update({ vibe_summary: enrichment.vibe_summary, tags: enrichment.tags, image_url: imageUrl })
+      .eq('id', rec.id)
+      .select()
+      .single();
+
+    return NextResponse.json({ recommendation: updated || rec });
+  } catch (e) {
+    console.warn('AI enrichment failed:', e);
+    return NextResponse.json({ recommendation: rec });
+  }
+}
+
 export async function GET(request: NextRequest) {
   const cravingId = new URL(request.url).searchParams.get('cravingId');
-  return NextResponse.json({ recommendations: [
-    { id: 'mock-r1', craving_id: cravingId, recommender_name: 'nicole', restaurant_name: 'O Pescador', image_url: '/mock/octopus.jpg', vibe_summary: 'Cozy Portuguese spot, their octopus is legendary', tags: ['cozy', 'seafood'], is_ai_generated: false, smart_match_score: 0.9, is_best_match: true, latitude: 51.508, longitude: -0.126, created_at: new Date().toISOString() },
-    { id: 'mock-r2', craving_id: cravingId, recommender_name: 'AI', restaurant_name: 'Casual Seafood Grill', image_url: '/mock/grill.jpg', vibe_summary: 'Lively spot known for fresh catches', tags: ['lively', 'grilled'], is_ai_generated: true, smart_match_score: 0.7, is_best_match: false, latitude: 51.506, longitude: -0.129, created_at: new Date().toISOString() },
-  ]});
+  const { data, error } = await supabase
+    .from('recommendations')
+    .select('*')
+    .eq('craving_id', cravingId)
+    .order('smart_match_score', { ascending: false });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ recommendations: data });
 }

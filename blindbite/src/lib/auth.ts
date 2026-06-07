@@ -95,7 +95,7 @@ export async function signUp(input: { handle: string; password: string }) {
   if (accounts.some((a) => a.handle === handle))
     throw new Error("that handle's taken. try another.");
   const acct: StoredAccount = {
-    id: "u-" + Math.random().toString(36).slice(2, 10),
+    id: crypto.randomUUID(),
     handle,
     avatarUrl: null,
     createdAt: new Date().toISOString(),

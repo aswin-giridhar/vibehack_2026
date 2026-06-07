@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase
     .from('chat_requests')
     .select('*')
-    .eq('recommender_id', userId)
+    .or(`requester_id.eq.${userId},recommender_id.eq.${userId}`)
     .eq('status', 'pending');
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

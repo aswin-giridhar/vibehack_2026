@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { postVibeCheckFull } from "../../lib/api";
+import { postVibeCheck } from "../../lib/api";
 import type { Recommendation } from "../../lib/blindbite-types";
 import { CURRENT_USER } from "../../lib/user";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,11 +14,11 @@ export function VibeCheck({ rec }: { rec: Recommendation }) {
   const [done, setDone] = useState<null | "loved" | "not">(null);
 
   const mut = useMutation({
-    mutationFn: postVibeCheckFull,
+    mutationFn: postVibeCheck,
     onSuccess: (res) => {
       if (res.chatRequest) {
         setDone("loved");
-      } else if (res.vibeCheck.loved_it) {
+      } else if (res.vibeCheck?.loved_it) {
         setDone("loved");
       } else {
         setDone("not");

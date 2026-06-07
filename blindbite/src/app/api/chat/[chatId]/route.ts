@@ -10,7 +10,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .eq('id', chatId)
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+  if (error) {
+    // PGRST116 = row not found → 404; anything else → 500
+    const status = error.code === 'PGRST116' ? 404 : 500;
+    return NextResponse.json({ error: error.message }, { status });
+  }
 
   // Enrich with display fields
   const cr = await safeSingle<{ requester_id: string; recommender_id: string; craving_id: string; recommendation_id: string }>(
@@ -21,10 +25,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   let restaurantName: string | null = null;
 
   if (cr) {
+    // Try cravings first for user_name, then fall back to recommendations
     const craving = await safeSingle<{ user_name: string }>(
       supabase.from('cravings').select('user_name').eq('id', cr.craving_id).single()
     );
-    otherUserName = craving?.user_name ?? 'someone';
+    if (craving?.user_name) {
+      otherUserName = craving.user_name;
+    } else {
+      const recName = await safeSingle<{ recommender_name: string }>(
+        supabase.from('recommendations').select('recommender_name').eq('id', cr.recommendation_id).single()
+      );
+      otherUserName = recName?.recommender_name ?? 'someone';
+    }
 
     const rec = await safeSingle<{ restaurant_name: string | null }>(
       supabase.from('recommendations').select('restaurant_name').eq('id', cr.recommendation_id).single()

@@ -28,6 +28,10 @@ export async function POST(request: NextRequest) {
       supabase.from('chat_requests').select('icebreaker, requester_id, recommender_id, craving_id, recommendation_id').eq('id', body.chatRequestId).single()
     );
 
+    if (!cr) {
+      return NextResponse.json({ error: 'Chat request not found after update' }, { status: 500 });
+    }
+
     const { data: chat, error: chatErr } = await supabase
       .from('chats')
       .insert({ chat_request_id: body.chatRequestId, requester_id: cr?.requester_id, recommender_id: cr?.recommender_id })

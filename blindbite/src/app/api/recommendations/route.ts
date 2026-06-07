@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
       longitude: body.longitude,
       location: `SRID=4326;POINT(${body.longitude} ${body.latitude})`,
       is_ai_generated: false,
+      image_url: body.imageUrl || null,
+      vibe_summary: body.vibeSummary || null,
+      tags: body.tags || [],
     })
     .select()
     .single();

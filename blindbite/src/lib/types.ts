@@ -107,6 +107,9 @@ export interface PostRecommendationRequest {
   restaurantAddress?: string;
   latitude: number;
   longitude: number;
+  imageUrl?: string;
+  vibeSummary?: string;
+  tags?: string[];
 }
 
 export interface PostVibeCheckRequest {

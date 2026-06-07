@@ -1,7 +1,7 @@
-// BlindBite API Bridge — real backend with mock fallback
+// BlindBite API Bridge — real backend calls
 // Same function signatures as Nicole's original mock shim,
-// so every component works unchanged. Swaps fetch() for the
-// in-memory store, with transparent response-envelope unwrapping.
+// so every component works unchanged. Uses fetch() with
+// transparent response-envelope unwrapping.
 
 import type {
   Chat,
@@ -95,9 +95,12 @@ export async function getRecommendations(
 export async function getRecommendation(
   id: string,
 ): Promise<Recommendation | null> {
-  // No single-recommendation endpoint yet — filter from the list
   try {
-    return null; // Will be populated by the list query + client-side filter
+    return await apiFetch<Recommendation>(
+      `/recommendations/${encodeURIComponent(id)}`,
+      undefined,
+      "recommendation",
+    );
   } catch {
     return null;
   }
@@ -123,6 +126,9 @@ export async function postRecommendation(input: {
       restaurantAddress: input.restaurant_address,
       latitude: input.latitude,
       longitude: input.longitude,
+      imageUrl: input.image_url || undefined,
+      vibeSummary: input.vibe_summary || undefined,
+      tags: input.tags?.length ? input.tags : undefined,
     }),
   }, "recommendation");
 }
@@ -140,34 +146,9 @@ export async function getAiCoRecommendations(
 // Vibe Checks
 // ─────────────────────────────────────────────
 
+/** Post a vibe check with full context. The old 2-param version
+ *  was removed because it sent garbage "unknown" IDs to the backend. */
 export async function postVibeCheck(input: {
-  recommendation_id: string;
-  loved_it: boolean;
-}): Promise<{ vibeCheck: VibeCheck; chatRequest?: ChatRequest }> {
-  // The VibeCheck component should use postVibeCheckFull when it has
-  // the full rec object. This simplified version is kept for compatibility.
-  const result = await fetch(`${API_BASE}/vibe-check`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      recommendationId: input.recommendation_id,
-      cravingId: "unknown",
-      requesterId: CURRENT_USER.id,
-      recommenderId: "unknown",
-      lovedIt: input.loved_it,
-    }),
-  });
-
-  if (!result.ok) {
-    const body = await result.json().catch(() => ({}));
-    throw new Error(body.error ?? `API ${result.status}`);
-  }
-  return result.json();
-}
-
-/** Enhanced vibe check that takes a full recommendation object
- *  so we can pass all required IDs to the backend. */
-export async function postVibeCheckFull(input: {
   recommendation_id: string;
   craving_id: string;
   requester_id: string;

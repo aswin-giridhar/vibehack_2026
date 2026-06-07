@@ -9,6 +9,7 @@ import { useNearbyCravings } from "@/hooks/useBlindbite";
 import type { Craving } from "@/lib/blindbite-types";
 import { DEFAULT_LOCATION } from "@/lib/user";
 import { Logo } from "@/components/brand/Logo";
+import { ViewToggle } from "@/components/feed/ViewToggle";
 
 export default function CravingsPage() {
   const { data: cravings = [] } = useNearbyCravings();
@@ -27,11 +28,16 @@ export default function CravingsPage() {
         />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[800] flex items-center gap-2 bg-gradient-to-b from-[var(--background)]/95 to-transparent px-4 pb-8 pt-4">
-        <Logo size={20} />
-        <span className="ml-2 text-[11px] uppercase tracking-[0.14em] text-[var(--ink-soft)]">
-          cravings near you
-        </span>
+      <div className="absolute inset-x-0 top-0 z-[800] flex items-center justify-between gap-2 bg-gradient-to-b from-[var(--background)]/95 to-transparent px-4 pb-8 pt-4">
+        <div className="flex items-center gap-2">
+          <Logo size={20} />
+          <span className="ml-1 text-[11px] uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+            cravings near you
+          </span>
+        </div>
+        <div className="pointer-events-auto">
+          <ViewToggle current="map" />
+        </div>
       </div>
 
       <AnimatePresence>

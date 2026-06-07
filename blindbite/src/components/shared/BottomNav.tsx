@@ -8,7 +8,7 @@ import { useAuth } from "../../lib/auth";
 const items = [
   { to: "/", label: "home", icon: Home },
   { to: "/map", label: "map", icon: Map },
-  { to: "/cravings", label: "cravings", icon: Sparkles },
+  { to: "/feed", label: "cravings", icon: Sparkles },
   { to: "/chat/requests", label: "chats", icon: MessageCircle },
 ] as const;
 
@@ -25,7 +25,9 @@ export function BottomNav() {
           const active =
             to === "/"
               ? pathname === "/"
-              : pathname === to || pathname.startsWith(to + "/");
+              : to === "/feed"
+                ? pathname === "/feed" || pathname === "/cravings"
+                : pathname === to || pathname.startsWith(to + "/");
           return (
             <li key={to}>
               <Link

@@ -9,5 +9,29 @@ export async function GET(request: NextRequest) {
     .eq('recommender_id', userId)
     .eq('status', 'pending');
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ requests: data });
+
+  // Enrich with display fields from the linked recommendation
+  const requests = await Promise.all((data ?? []).map(async (cr) => {
+    const { data: rec } = await supabase
+      .from('recommendations')
+      .select('restaurant_name, recommender_name')
+      .eq('id', cr.recommendation_id)
+      .single();
+
+    // Fetch requester name from cravings table (user_name is stored there)
+    const { data: craving } = await supabase
+      .from('cravings')
+      .select('user_name')
+      .eq('id', cr.craving_id)
+      .single();
+
+    return {
+      ...cr,
+      restaurant_name: rec?.restaurant_name ?? null,
+      recommender_name: rec?.recommender_name ?? null,
+      requester_name: craving?.user_name ?? null,
+    };
+  }));
+
+  return NextResponse.json({ requests });
 }

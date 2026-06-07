@@ -3,8 +3,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { postVibeCheck } from "../../lib/api";
+import { postVibeCheckFull } from "../../lib/api";
 import type { Recommendation } from "../../lib/blindbite-types";
+import { CURRENT_USER } from "../../lib/user";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function VibeCheck({ rec }: { rec: Recommendation }) {
@@ -13,7 +14,7 @@ export function VibeCheck({ rec }: { rec: Recommendation }) {
   const [done, setDone] = useState<null | "loved" | "not">(null);
 
   const mut = useMutation({
-    mutationFn: postVibeCheck,
+    mutationFn: postVibeCheckFull,
     onSuccess: (res) => {
       if (res.chatRequest) {
         setDone("loved");
@@ -32,7 +33,7 @@ export function VibeCheck({ rec }: { rec: Recommendation }) {
     <div className="relative flex min-h-[100dvh] flex-col items-center justify-center gap-6 px-6 pb-32 pt-10">
       <div className="relative w-full max-w-sm overflow-hidden rounded-[32px] bg-[var(--card)] shadow-[0_20px_50px_-20px_rgba(0,0,0,0.25)]">
         <img
-          src={rec.image_url}
+          src={rec.image_url ?? undefined}
           alt={rec.restaurant_name}
           width={400}
           height={300}
@@ -77,7 +78,7 @@ export function VibeCheck({ rec }: { rec: Recommendation }) {
                 disabled={mut.isPending}
                 onClick={() => {
                   setBurst(true);
-                  mut.mutate({ recommendation_id: rec.id, loved_it: true });
+                  mut.mutate({ recommendation_id: rec.id, craving_id: rec.craving_id, requester_id: CURRENT_USER.id, recommender_id: rec.recommender_id, loved_it: true });
                 }}
                 className="w-full rounded-full bg-[var(--lime)] py-4 text-base font-semibold text-[var(--ink)] shadow-[0_10px_30px_-10px_rgba(200,241,53,0.7)] transition active:scale-[0.97]"
               >
@@ -95,7 +96,7 @@ export function VibeCheck({ rec }: { rec: Recommendation }) {
             <button
               disabled={mut.isPending}
               onClick={() =>
-                mut.mutate({ recommendation_id: rec.id, loved_it: false })
+                mut.mutate({ recommendation_id: rec.id, craving_id: rec.craving_id, requester_id: CURRENT_USER.id, recommender_id: rec.recommender_id, loved_it: false })
               }
               className="text-sm text-[var(--ink-soft)] underline-offset-4 hover:underline"
             >

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, safeSingle } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   let body: { chatId: string; senderId: string; content: string };
@@ -19,5 +19,17 @@ export async function POST(request: NextRequest) {
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ message: data });
+
+  // Enrich with sender_name
+  let senderName = 'someone';
+  if (body.senderId === 'system' || body.senderId === 'ai-system') {
+    senderName = 'blindbite';
+  } else {
+    const craving = await safeSingle<{ user_name: string }>(
+      supabase.from('cravings').select('user_name').eq('user_id', body.senderId).limit(1).single()
+    );
+    senderName = craving?.user_name ?? 'someone';
+  }
+
+  return NextResponse.json({ message: { ...data, sender_name: senderName } });
 }

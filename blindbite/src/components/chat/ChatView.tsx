@@ -31,13 +31,13 @@ export function ChatView({ chat }: { chat: Chat }) {
   return (
     <div className="flex h-[100dvh] flex-col">
       <header className="flex items-center gap-3 border-b border-[var(--ink)]/8 bg-[var(--background)]/90 px-4 py-3 backdrop-blur">
-        <Avatar name={chat.other_user_name} size={36} />
+        <Avatar name={chat.other_user_name ?? "someone"} size={36} />
         <div className="min-w-0">
           <p className="truncate font-semibold text-[var(--ink)]">
-            @{chat.other_user_name}
+            @{chat.other_user_name ?? "someone"}
           </p>
           <p className="truncate text-xs text-[var(--ink-soft)]">
-            about {chat.restaurant_name}
+            about {chat.restaurant_name ?? "a spot"}
           </p>
         </div>
       </header>

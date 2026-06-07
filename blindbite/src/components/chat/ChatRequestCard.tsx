@@ -20,17 +20,17 @@ export function ChatRequestCard({ req }: { req: ChatRequest }) {
   return (
     <article className="flex flex-col gap-3 rounded-3xl bg-[var(--card)] p-5 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.12)]">
       <div className="flex items-center gap-3">
-        <Avatar name={req.requester_name} size={36} />
+        <Avatar name={req.requester_name ?? "someone"} size={36} />
         <div className="min-w-0">
           <p className="text-sm text-[var(--ink-soft)]">
-            <span className="font-semibold text-[var(--ink)]">@{req.requester_name}</span>{" "}
+            <span className="font-semibold text-[var(--ink)]">@{req.requester_name ?? "someone"}</span>{" "}
             loved your pick for
           </p>
           <p
             className="truncate text-[var(--ink)]"
             style={{ fontFamily: "var(--font-serif)", fontSize: 22 }}
           >
-            {req.restaurant_name}
+            {req.restaurant_name ?? "a spot"}
           </p>
         </div>
       </div>

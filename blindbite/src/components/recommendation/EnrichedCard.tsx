@@ -29,7 +29,7 @@ export function EnrichedCard({
     >
       <div className="relative">
         <img
-          src={rec.image_url}
+          src={rec.image_url ?? undefined}
           alt={rec.restaurant_name}
           width={compact ? 280 : 600}
           height={compact ? 200 : 360}

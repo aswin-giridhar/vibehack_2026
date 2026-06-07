@@ -10,7 +10,7 @@ import {
   useNearbyCravings,
   useRecommendations,
 } from "@/hooks/useBlindbite";
-import type { Recommendation } from "@/lib/blindbite-types";
+import type { Craving, Recommendation } from "@/lib/blindbite-types";
 import { DEFAULT_LOCATION } from "@/lib/user";
 import { Search } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -25,6 +25,7 @@ function MapInner() {
   const { data: craving } = useCraving(activeId);
   const { data: recs = [] } = useRecommendations(activeId);
   const [selected, setSelected] = useState<Recommendation | null>(null);
+  const [selectedCraving, setSelectedCraving] = useState<Craving | null>(null);
   const [filter, setFilter] = useState("all");
 
   const center = craving
@@ -47,6 +48,7 @@ function MapInner() {
           craving={craving}
           recommendations={recs}
           onPickRec={setSelected}
+          onPickCraving={setSelectedCraving}
         />
       </div>
 
@@ -113,6 +115,36 @@ function MapInner() {
       </div>
 
       <PinSheet rec={selected} onClose={() => setSelected(null)} />
+
+      {/* Craving detail sheet */}
+      {selectedCraving && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-[1300] max-h-[50vh] overflow-y-auto rounded-t-[28px] bg-[var(--background)] pb-28 shadow-[0_-8px_30px_rgba(0,0,0,0.15)]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mx-auto my-2 h-1.5 w-10 rounded-full bg-[var(--ink)]/15" />
+          <div className="p-5">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--ink-soft)]">
+              @{selectedCraving.user_name} is craving
+            </p>
+            <p className="mt-1 italic text-[var(--ink)]" style={{ fontFamily: "var(--font-serif)", fontSize: 24, lineHeight: 1.2 }}>
+              &ldquo;{selectedCraving.text}&rdquo;
+            </p>
+            <a
+              href={`/cravings`}
+              className="mt-4 inline-block rounded-full bg-[var(--ink)] px-6 py-3 text-sm font-semibold text-white"
+            >
+              recommend a spot →
+            </a>
+            <button
+              onClick={() => setSelectedCraving(null)}
+              className="ml-3 text-sm text-[var(--ink-soft)]"
+            >
+              close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
